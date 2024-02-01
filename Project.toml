@@ -1,0 +1,7 @@
+name = "AutoDiff"
+uuid = "c0feadbb-a4ff-4594-8549-337362209adb"
+authors = ["Vadim Mychko <mychkvad@fel.cvut.cz>"]
+version = "0.1.0"
+
+[compat]
+julia = "1.10"
