@@ -2,7 +2,7 @@ module AutoDiff
 
 import Base: show, +
 
-export Tensor
+export Tensor, backward
 
 mutable struct Tensor
     data::AbstractArray{<:Real}
@@ -69,6 +69,17 @@ end
 
 +(a::Tensor, b) = a + Tensor(b)
 +(a, b::Tensor) = Tensor(a) + b
+
+function zero_grad!(a::Tensor)
+    a.grad = zeros(Float32, size(a.grad))
+end
+
+function zero_grad!!(a::Tensor)
+    nodes = topological_sort(a)
+    for node in nodes
+        zero_grad!(node)
+    end
+end
 
 function topological_sort(a::Tensor)
     nodes = Vector{Tensor}()
