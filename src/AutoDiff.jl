@@ -1,6 +1,6 @@
 module AutoDiff
 
-import Base: show, +
+import Base: show, +, *
 
 export Tensor, backward
 
@@ -48,9 +48,7 @@ function reshape_grad(grad::AbstractArray, target_shape::Tuple)
         push!(shape, 1)
     end
 
-    target_shape = Tuple(shape)
-    dims = [i for i in 1:length(target_shape)
-            if target_shape[i] == 1 && grad_shape[i] != 1]
+    dims = [i for i in 1:length(shape) if shape[i] == 1 && grad_shape[i] != 1]
 
     return reshape(sum(grad; dims), target_shape)
 end
@@ -67,8 +65,22 @@ function +(a::Tensor, b::Tensor)
     return out
 end
 
+function *(a::Tensor, b::Tensor)
+    parents = Set{Tensor}([a, b])
+    require_grad = a.require_grad || b.require_grad
+    out = Tensor(a.data .* b.data; operation="*", parents, require_grad)
+    out.update! = () -> begin
+        a.grad += reshape_grad(out.grad .* b.data, size(a.grad))
+        b.grad += reshape_grad(out.grad .* a.data, size(b.grad))
+    end
+
+    return out
+end
+
 +(a::Tensor, b) = a + Tensor(b)
 +(a, b::Tensor) = Tensor(a) + b
+*(a::Tensor, b) = a * Tensor(b)
+*(a, b::Tensor) = Tensor(a) * b
 
 function zero_grad!(a::Tensor)
     a.grad = zeros(Float32, size(a.grad))
