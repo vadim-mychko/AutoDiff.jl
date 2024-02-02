@@ -2,7 +2,7 @@ module AutoDiff
 
 import Base: show, +, *, -, /, ^, inv
 
-export Tensor, backward
+export Tensor, matmul, backward, zero_grad!, zero_grad!!
 
 mutable struct Tensor
     data::AbstractArray{<:Real}
