@@ -92,6 +92,18 @@ function inv(a::Tensor)
     return out
 end
 
+function matmul(a::Tensor, b::Tensor)
+    parents = Set{Tensor}([a, b])
+    require_grad = a.require_grad || b.require_grad
+    out = Tensor(a.data * b.data; parents, require_grad)
+    out.update! = () -> begin
+        a.grad += out.grad * transpose(b.data)
+        b.grad += transpose(a.data) * out.grad
+    end
+
+    return out
+end
+
 +(a::Tensor, b) = a + Tensor(b)
 +(a, b::Tensor) = Tensor(a) + b
 *(a::Tensor, b) = a * Tensor(b)
@@ -103,6 +115,8 @@ end
 /(a::Tensor, b::Tensor) = a * inv(b)
 /(a, b::Tensor) = Tensor(a) / b
 /(a::Tensor, b) = a / Tensor(b)
+matmul(a, b::Tensor) = matmul(Tensor(a), b)
+matmul(a::Tensor, b) = matmul(a, Tensor(b))
 
 function zero_grad!(a::Tensor)
     a.grad = zeros(Float32, size(a.grad))
