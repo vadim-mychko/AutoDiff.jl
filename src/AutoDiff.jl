@@ -53,9 +53,10 @@ function reshape_grad(grad::AbstractArray, target_shape::Tuple)
     return reshape(sum(grad; dims), target_shape)
 end
 
-function +(a::Tensor, b::Tensor)::Tensor
+function +(a::Tensor, b::Tensor)
+    parents = Set{Tensor}([a, b])
     require_grad = a.require_grad || b.require_grad
-    out = Tensor(a.data .+ b.data; require_grad)
+    out = Tensor(a.data .+ b.data; operation="+", parents, require_grad)
     out.update! = () -> begin
         a.grad += reshape_grad(out.grad, size(a.grad))
         b.grad += reshape_grad(out.grad, size(b.grad))
@@ -63,5 +64,8 @@ function +(a::Tensor, b::Tensor)::Tensor
 
     return out
 end
+
++(a::Tensor, b) = a + Tensor(b)
++(a, b::Tensor) = Tensor(a) + b
 
 end # module AutoDiff
