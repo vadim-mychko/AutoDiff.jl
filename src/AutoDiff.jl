@@ -2,6 +2,31 @@ module AutoDiff
 
 export Tensor, matmul, backward, zero_grad!, zero_grad!!
 
+"""
+    Tensor
+
+A mutable structure designed to encapsulate data for automatic differentiation
+within the `AutoDiff` module. It is a fundamental component for constructing
+computational graphs, facilitating the computation of gradients necessary
+for optimization algorithms, especially in machine learning contexts.
+
+# Fields
+- `data::AbstractArray{<:Real}`: Holds the tensor's numerical data.
+
+- `parents::AbstractSet{Tensor}`: References the tensor's immediate predecessors within
+a computational graph, essential for the backpropagation algorithm to compute gradients.
+
+- `require_grad::Bool`: Indicates if the tensor should be considered for gradient
+computation during backpropagation, enabling selective participation in the
+computational graph based on the need for optimization.
+
+- `grad::AbstractArray{Float32}`: Stores the computed gradient of the tensor as
+a result of backpropagation, representing the partial derivatives of a target
+function with respect to this tensor's data.
+
+- `update!::Function`: A custom function assigned to update the tensor's gradient
+during the backpropagation process, tailored to the specific operations that produced the tensor.
+"""
 mutable struct Tensor
     data::AbstractArray{<:Real}
     parents::AbstractSet{Tensor}
@@ -29,6 +54,31 @@ function Base.show(io::IO, obj::Tensor)
     print(io, ")")
 end
 
+"""
+    reshape_grad(grad::AbstractArray, target_shape::Tuple)
+
+Reshapes the gradient `grad` to match a specified `target_shape`.
+This function is useful in automatic differentiation to ensure that gradients
+propagated back through operations match the shapes of the corresponding tensors.
+The function handles different scenarios:
+
+1. If `grad` already matches `target_shape`, it is returned as is.
+2. If `target_shape` is an empty tuple `()`, indicating a scalar,
+the sum of `grad` is returned.
+3. Otherwise, it reshapes `grad` by summing over dimensions that do not match
+`target_shape` and then reshaping the result to fit `target_shape`.
+
+This operation is essential when gradients from operations involving broadcasting
+or reduction need to be properly aligned with the original tensor shapes for
+accurate gradient updates.
+
+# Arguments
+- `grad::AbstractArray`: The gradient array to be reshaped.
+- `target_shape::Tuple`: The target shape to which `grad` should be reshaped.
+
+# Returns
+- `AbstractArray`: The reshaped gradient array.
+"""
 function reshape_grad(grad::AbstractArray, target_shape::Tuple)
     grad_shape = size(grad)
     grad_shape == target_shape && return grad
@@ -160,10 +210,33 @@ Base.:/(a::Tensor, b) = a / Tensor(b)
 matmul(a, b::Tensor) = matmul(Tensor(a), b)
 matmul(a::Tensor, b) = matmul(a, Tensor(b))
 
+"""
+    zero_grad!(a::Tensor)
+
+Resets the gradient of tensor `a` to zero. This is particularly useful in iterative
+optimization algorithms where gradients are accumulated, and need to be reset
+after each update step.
+
+# Arguments
+- `a::Tensor`: The tensor for which to reset the gradient.
+"""
 function zero_grad!(a::Tensor)
     a.grad = zeros(Float32, size(a.grad))
 end
 
+"""
+    zero_grad!!(a::Tensor)
+
+Recursively resets the gradients of all tensors in the computational graph to which
+tensor `a` belongs, to zero. This function traverses the entire computational graph
+starting from `a`, ensuring that every tensor's gradient is reset. This is useful
+for resetting gradients of all parameters in a neural network before the next
+forward and backward pass.
+
+# Arguments
+- `a::Tensor`: The tensor from which to start resetting gradients.
+This is typically an output tensor of a computational graph.
+"""
 function zero_grad!!(a::Tensor)
     nodes = topological_sort(a)
     for node in nodes
@@ -171,6 +244,19 @@ function zero_grad!!(a::Tensor)
     end
 end
 
+"""
+    topological_sort(a::Tensor) -> Vector{Tensor}
+
+Performs a topological sort on the computational graph starting from tensor `a`.
+This function identifies the order in which operations must be executed to correctly
+perform the backward pass of automatic differentiation.
+
+# Arguments
+- `a::Tensor`: The tensor from which to start the topological sort.
+
+# Returns
+- `Vector{Tensor}`: A vector of tensors sorted in topological order.
+"""
 function topological_sort(a::Tensor)
     nodes = Vector{Tensor}()
     visited = Set{Tensor}()
@@ -191,6 +277,22 @@ function topological_sort(a::Tensor)
     return nodes
 end
 
+"""
+    backward(a::Tensor)
+
+Performs the backpropagation algorithm starting from tensor `a`. This function computes
+the gradients of `a` with respect to all tensors in its computational graph that have
+`require_grad` set to `true`. It operates in two steps:
+1. Calls `topological_sort()` to order the tensors in a way that respects their
+computational dependencies.
+2. Iteratively applies the stored `update!` functions in reverse topological order to
+propagate gradients back through the graph.
+
+# Arguments
+- `a::Tensor`: The tensor from which to start backpropagation. It is assumed that this
+tensor is the output of some computation, typically a loss function in machine
+learning contexts.
+"""
 function backward(a::Tensor)
     nodes = topological_sort(a)
     a.grad = ones(Float32, size(a.grad))
