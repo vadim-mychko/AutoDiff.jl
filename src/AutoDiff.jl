@@ -102,6 +102,50 @@ function matmul(a::Tensor, b::Tensor)
     return out
 end
 
+function Base.sin(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(sin.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.grad += out.grad .* cos.(a.data)
+    end
+
+    return out
+end
+
+function Base.cos(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(cos.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.grad += out.grad .* (-1) .* sin.(a.data)
+    end
+
+    return out
+end
+
+function Base.exp(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(exp.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.grad += out.grad .* out.data
+    end
+
+    return out
+end
+
+function Base.log(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(log.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.grad += out.grad ./ a.data
+    end
+
+    return out
+end
+
 Base.:+(a::Tensor, b) = a + Tensor(b)
 Base.:+(a, b::Tensor) = Tensor(a) + b
 Base.:*(a::Tensor, b) = a * Tensor(b)
