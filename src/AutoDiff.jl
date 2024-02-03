@@ -1,7 +1,5 @@
 module AutoDiff
 
-import Base: show, +, *, -, /, ^, inv
-
 export Tensor, matmul, backward, zero_grad!, zero_grad!!
 
 mutable struct Tensor
@@ -24,7 +22,7 @@ function Tensor(data::Real; kwargs...)
     return Tensor([data]; kwargs...)
 end
 
-function show(io::IO, obj::Tensor)
+function Base.show(io::IO, obj::Tensor)
     print(io, "Tensor(")
     show(io, obj.data)
     obj.require_grad && print(io, ", require_grad=true")
@@ -46,7 +44,7 @@ function reshape_grad(grad::AbstractArray, target_shape::Tuple)
     return reshape(sum(grad; dims), target_shape)
 end
 
-function +(a::Tensor, b::Tensor)
+function Base.:+(a::Tensor, b::Tensor)
     parents = Set{Tensor}([a, b])
     require_grad = a.require_grad || b.require_grad
     out = Tensor(a.data .+ b.data; parents, require_grad)
@@ -58,7 +56,7 @@ function +(a::Tensor, b::Tensor)
     return out
 end
 
-function *(a::Tensor, b::Tensor)
+function Base.:*(a::Tensor, b::Tensor)
     parents = Set{Tensor}([a, b])
     require_grad = a.require_grad || b.require_grad
     out = Tensor(a.data .* b.data; parents, require_grad)
@@ -70,7 +68,7 @@ function *(a::Tensor, b::Tensor)
     return out
 end
 
-function ^(a::Tensor, b::Real)
+function Base.:^(a::Tensor, b::Real)
     parents = Set{Tensor}([a])
     require_grad = a.require_grad
     out = Tensor(a.data .^ b; parents, require_grad)
@@ -81,7 +79,7 @@ function ^(a::Tensor, b::Real)
     return out
 end
 
-function inv(a::Tensor)
+function Base.inv(a::Tensor)
     parents = Set{Tensor}([a])
     require_grad = a.require_grad
     out = Tensor(inv.(a.data); parents, require_grad)
@@ -104,17 +102,17 @@ function matmul(a::Tensor, b::Tensor)
     return out
 end
 
-+(a::Tensor, b) = a + Tensor(b)
-+(a, b::Tensor) = Tensor(a) + b
-*(a::Tensor, b) = a * Tensor(b)
-*(a, b::Tensor) = Tensor(a) * b
--(a::Tensor) = a * (-1)
--(a::Tensor, b::Tensor) = a + (-b)
--(a, b::Tensor) = Tensor(a) - b
--(a::Tensor, b) = a - Tensor(b)
-/(a::Tensor, b::Tensor) = a * inv(b)
-/(a, b::Tensor) = Tensor(a) / b
-/(a::Tensor, b) = a / Tensor(b)
+Base.:+(a::Tensor, b) = a + Tensor(b)
+Base.:+(a, b::Tensor) = Tensor(a) + b
+Base.:*(a::Tensor, b) = a * Tensor(b)
+Base.:*(a, b::Tensor) = Tensor(a) * b
+Base.:-(a::Tensor) = a * (-1)
+Base.:-(a::Tensor, b::Tensor) = a + (-b)
+Base.:-(a, b::Tensor) = Tensor(a) - b
+Base.:-(a::Tensor, b) = a - Tensor(b)
+Base.:/(a::Tensor, b::Tensor) = a * inv(b)
+Base.:/(a, b::Tensor) = Tensor(a) / b
+Base.:/(a::Tensor, b) = a / Tensor(b)
 matmul(a, b::Tensor) = matmul(Tensor(a), b)
 matmul(a::Tensor, b) = matmul(a, Tensor(b))
 
