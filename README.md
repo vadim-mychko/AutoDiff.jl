@@ -18,7 +18,7 @@ Whether you're optimizing neural networks or implementing custom gradient-based 
 
 ## Installation
 Package is not registered, but can be installed in the following way:
-```julia
+```
 (@v1.10) pkg> add https://github.com/B0B36JUL-FinalProjects-2023/Projekt_mychkvad
 ```
 
@@ -28,15 +28,23 @@ Here's a quick start guide:
 ```julia
 using AutoDiff
 
-# Define tensors with `require_grad=true` to track gradients
-x = Tensor(rand(Float32, (3, 3)); require_grad=true)
+# Perform forward pass, each operation is broadcasted
+a = Tensor(rand(Float32, (3, 3)); require_grad=true, label="a")
+b = Tensor(rand(Float32); label="b")
+c = a + b
+c.label = "c"
+d = Tensor(rand(Float32, 3); label="d")
+e = c * d
+e.label = "e"
 
-# Supports basic arithmetic operations, assuming element-wise execution
-y = x * rand()
+# Perform backward pass: compute gradients
+backward(e)
 
-# Compute gradients
-backward(y)
+# Outputs the gradient of `e` with respect to `a`
+println(a.grad)
 
-# Access gradients
-println(x.grad)  # Outputs the gradient of `y` with respect to `x`
+# Plots computational graph
+show_graph(e)
 ```
+
+![Computational Graph Example](assets/computational_graph.svg)
