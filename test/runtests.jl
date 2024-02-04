@@ -25,7 +25,8 @@ const DIM_RANGE = 1:3
         @test matmul(ta, tb).data ≈ a * b
     end
 
-    @testset "Unary `$op` on random tensors" for op in [-, inv, sin, cos, exp, log]
+    @testset "Unary `$op` on random tensors" for op in [-, inv, sin, cos, exp, log,
+                                                        relu, sigmoid, tanh]
         for n_dims in DIM_RANGE
             dims = Tuple(rand(N_ELEMENTS) for _ in 1:n_dims)
             a = rand(Float32, dims)

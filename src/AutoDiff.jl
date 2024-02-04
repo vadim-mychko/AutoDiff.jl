@@ -1,6 +1,6 @@
 module AutoDiff
 
-export Tensor, matmul, backward, zero_grad!, zero_grad!!
+export Tensor, matmul, backward, zero_grad!, zero_grad!!, relu, sigmoid
 
 """
     Tensor
@@ -202,6 +202,43 @@ function matmul(a::Tensor, b::Tensor)
     out.update! = () -> begin
         a.require_grad && (a.grad += out.grad * transpose(b.data))
         b.require_grad && (b.grad += transpose(a.data) * out.grad)
+    end
+
+    return out
+end
+
+relu(x) = max(0, x)
+
+function relu(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(relu.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.require_grad && (a.grad += out.grad .* (a.data .>= 0))
+    end
+
+    return out
+end
+
+sigmoid(x) = 1 / (1 + exp(-x))
+
+function sigmoid(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(sigmoid.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.require_grad && (a.grad += out.grad .* out.data .* (1 .- out.data))
+    end
+
+    return out
+end
+
+function Base.tanh(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(tanh.(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.require_grad && (a.grad += out.grad .* (1 .- (out.data .^ 2)))
     end
 
     return out
