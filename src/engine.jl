@@ -1,4 +1,4 @@
-export Tensor, matmul, backward, zero_grad!, zero_grad!!, relu, sigmoid
+export Tensor, matmul, backward, zero_grad!, zero_grad!!, relu, sigmoid, CEloss, step
 
 """
     Tensor
@@ -249,15 +249,17 @@ function Base.tanh(a::Tensor)
 end
 
 # Assume the given tensor is a matrix (M, N) = (# features, # points)
-function CEloss(a::Tensor, target::Vector{Integer})
-    exp = exp.(a.data)  # (M, N)
-    softmax = exp ./ sum(exp, dims=1)  # (M, N)
+function CEloss(a::Tensor, target::Vector{<:Integer})
+    max_vector = maximum(a.data, dims=1)  # (1, N)
+    a_exp = exp.(a.data .- max_vector)  # (M, N)
+    softmax = a_exp ./ sum(a_exp, dims=1)  # (M, N)
 
     # encode given target into one-hot vectors
     N = size(target, 1)
     onehot_target = zeros(Int8, size(softmax))  # (M, N)
-    indexes = collect(1:N)
-    onehot_target[indexes, target] .= 1
+    for i in 1:N
+        onehot_target[target[i], i] = 1
+    end
 
     parents = Set{Tensor}([a])
     require_grad = a.require_grad
@@ -315,7 +317,7 @@ This is typically an output tensor of a computational graph.
 function zero_grad!!(a::Tensor)
     nodes = topological_sort(a)
     for node in nodes
-        zero_grad!(node)
+        node.require_grad && zero_grad!(node)
     end
 end
 
