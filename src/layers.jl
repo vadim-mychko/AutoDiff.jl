@@ -14,7 +14,7 @@ Base.show(io::IO, ::Sigmoid) = print(io, "Sigmoid")
 
 # ===================================== Tanh =========================================
 struct Tanh <: Layer end
-Base.show(io::IO, ::Sigmoid) = print(io, "Tanh")
+Base.show(io::IO, ::Tanh) = print(io, "Tanh")
 (::Tanh)(x::Tensor) = tanh(x)
 
 # =================================== Sequential =====================================
