@@ -263,7 +263,7 @@ function CEloss(a::Tensor, target::Vector{<:Integer})
 
     parents = Set{Tensor}([a])
     require_grad = a.require_grad
-    out_data = -sum(onehot_target .* log.(softmax)) / N
+    out_data = -sum(onehot_target .* log.(softmax .+ 1e-5)) / N
     out = Tensor(out_data; parents, require_grad, operation="CEloss")
 
     out.update! = () -> begin
