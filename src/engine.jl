@@ -375,3 +375,27 @@ function backward(a::Tensor)
         node.update!()
     end
 end
+
+"""
+    step(a::Tensor; lr::Real=0.001)
+
+Performs a single step of gradient descent optimization on all `Tensor` nodes
+in the computational graph of `a`.
+
+This function iteratively adjusts each `Tensor`'s data by moving it in the direction
+that reduces the loss. The adjustment is determined by the gradient of the loss with
+respect to the `Tensor`'s data (`node.grad`) and the learning rate (`lr`).
+
+# Arguments
+- `a::Tensor`: The tensor representing the output of the computational graph, typically
+  the loss. The function will perform the optimization step using the gradients stored
+  in this tensor's computational graph.
+- `lr::Real=0.001`: The learning rate, a scaling factor for the gradients that
+  controls the size of the step to take during optimization. Default is 0.001.
+"""
+function step(a::Tensor; lr::Real=0.001)
+    nodes = topological_sort(a)
+    for node in reverse(nodes)
+        node.require_grad && (node.data -= node.grad .* lr)
+    end
+end
