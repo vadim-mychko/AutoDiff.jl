@@ -45,7 +45,7 @@ end
 
 function Linear(in::Integer, out::Integer; bias=false)
     bias && (in += 1)
-    params = Tensor(rand(Float32, (out, in)); require_grad=true)
+    params = Tensor(rand(Float64, (out, in)); require_grad=true)
     return Linear(params)
 end
 
