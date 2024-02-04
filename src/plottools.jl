@@ -1,6 +1,6 @@
 import Graphs: DiGraph, add_edge!, add_vertex!
 import GraphRecipes: graphplot
-import Plots: plot
+import Plots: plot, savefig
 
 """
     show_graph(root::Tensor; kwargs...)
@@ -13,8 +13,8 @@ This recipe can be shown using graphplot(a::Tensor) from Plots library.
 # Arguments
 - `root::Tensor`: The root tensor from which to start plotting the computational graph.
 """
-function show_graph(root::Tensor; nodeshape=:circle, curves=false, node_size=0.2,
-    fontsize=10, nodecolor=:lightgray, method=:stress, kwargs...)
+function show_graph(root::Tensor; save_path=nothing, nodeshape=:circle, curves=false,
+    node_size=0.2, fontsize=10, nodecolor=:lightgray, kwargs...)
 
     nodes = topological_sort(root)
     tensor2index = Dict{Tensor,Int}()
@@ -49,5 +49,6 @@ function show_graph(root::Tensor; nodeshape=:circle, curves=false, node_size=0.2
         end
     end
 
-    graphplot(g; names, nodeshape, curves, node_size, fontsize, nodecolor, method, kwargs...)
+    p = graphplot(g; names, nodeshape, curves, node_size, fontsize, nodecolor, kwargs...)
+    save_path !== nothing ? savefig(p, save_path) : plot(p)
 end
