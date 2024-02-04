@@ -1,3 +1,5 @@
+export Tensor, matmul, backward, zero_grad!, zero_grad!!, relu, sigmoid
+
 """
     Tensor
 

@@ -1,3 +1,5 @@
+export show_graph
+
 import Graphs: DiGraph, add_edge!, add_vertex!
 import GraphRecipes: graphplot
 import Plots: plot, savefig
