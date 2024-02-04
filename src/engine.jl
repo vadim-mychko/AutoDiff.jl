@@ -248,6 +248,29 @@ function Base.tanh(a::Tensor)
     return out
 end
 
+# Assume the given tensor is a matrix (M, N) = (# features, # points)
+function CEloss(a::Tensor, target::Vector{Integer})
+    exp = exp.(a.data)  # (M, N)
+    softmax = exp ./ sum(exp, dims=1)  # (M, N)
+
+    # encode given target into one-hot vectors
+    N = size(target, 1)
+    onehot_target = zeros(Int8, size(softmax))  # (M, N)
+    indexes = collect(1:N)
+    onehot_target[indexes, target] .= 1
+
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out_data = -sum(onehot_target .* log.(softmax)) / N
+    out = Tensor(out_data; parents, require_grad, operation="CEloss")
+
+    out.update! = () -> begin
+        a.require_grad && (a.grad += out.grad .* (softmax .- onehot_target) ./ N)
+    end
+
+    return out
+end
+
 Base.:+(a::Tensor, b) = a + Tensor(b)
 Base.:+(a, b::Tensor) = Tensor(a) + b
 Base.:*(a::Tensor, b) = a * Tensor(b)
