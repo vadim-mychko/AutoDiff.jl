@@ -26,7 +26,7 @@ const DIM_RANGE = 1:3
     end
 
     @testset "Unary `$op` on random tensors" for op in [-, inv, sin, cos, exp, log,
-                                                        relu, sigmoid, tanh]
+        relu, sigmoid, tanh]
         for n_dims in DIM_RANGE
             dims = Tuple(rand(N_ELEMENTS) for _ in 1:n_dims)
             a = rand(Float32, dims)
@@ -41,7 +41,7 @@ const DIM_RANGE = 1:3
             a = rand(Float32, dims)
             b = rand()
             ta = Tensor(a)
-            @test (ta ^ b).data ≈ (a .^ b)
+            @test (ta^b).data ≈ (a .^ b)
         end
     end
 

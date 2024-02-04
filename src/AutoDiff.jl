@@ -25,7 +25,8 @@ a result of backpropagation, representing the partial derivatives of a target
 function with respect to this tensor's data.
 
 - `update!::Function`: A custom function assigned to update the tensor's gradient
-during the backpropagation process, tailored to the specific operations that produced the tensor.
+during the backpropagation process, tailored to the specific operations that produced the
+tensor.
 """
 mutable struct Tensor
     data::AbstractArray{<:Real}
@@ -37,8 +38,8 @@ end
 
 function Tensor(
     data::AbstractArray{<:Real};
-    parents::AbstractSet{Tensor} = Set{Tensor}(),
-    require_grad::Bool = false,
+    parents::AbstractSet{Tensor}=Set{Tensor}(),
+    require_grad::Bool=false,
 )
     return Tensor(data, parents, require_grad, zeros(Float32, size(data)), () -> return)
 end
