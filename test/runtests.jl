@@ -43,6 +43,15 @@ const DIM_RANGE = 1:3
             @test (ta ^ b).data ≈ (a .^ b)
         end
     end
+
+    @testset "Unary `transpose` on random tensors" begin
+        for n_dims in 1:2
+            dims = Tuple(rand(N_ELEMENTS) for _ in 1:n_dims)
+            a = rand(Float32, dims)
+            ta = Tensor(a)
+            @test transpose(ta).data ≈ transpose(a)
+        end
+    end
 end
 
 @testset "Backward pass" begin

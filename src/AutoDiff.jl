@@ -47,10 +47,10 @@ function Tensor(data::Real; kwargs...)
     return Tensor([data]; kwargs...)
 end
 
-function Base.show(io::IO, obj::Tensor)
+function Base.show(io::IO, a::Tensor)
     print(io, "Tensor(")
-    show(io, obj.data)
-    obj.require_grad && print(io, ", require_grad=true")
+    show(io, a.data)
+    a.require_grad && print(io, ", require_grad=true")
     print(io, ")")
 end
 
@@ -99,8 +99,8 @@ function Base.:+(a::Tensor, b::Tensor)
     require_grad = a.require_grad || b.require_grad
     out = Tensor(a.data .+ b.data; parents, require_grad)
     out.update! = () -> begin
-        a.grad += reshape_grad(out.grad, size(a.grad))
-        b.grad += reshape_grad(out.grad, size(b.grad))
+        a.require_grad && (a.grad += reshape_grad(out.grad, size(a.grad)))
+        b.require_grad && (b.grad += reshape_grad(out.grad, size(b.grad)))
     end
 
     return out
@@ -111,8 +111,8 @@ function Base.:*(a::Tensor, b::Tensor)
     require_grad = a.require_grad || b.require_grad
     out = Tensor(a.data .* b.data; parents, require_grad)
     out.update! = () -> begin
-        a.grad += reshape_grad(out.grad .* b.data, size(a.grad))
-        b.grad += reshape_grad(out.grad .* a.data, size(b.grad))
+        a.require_grad && (a.grad += reshape_grad(out.grad .* b.data, size(a.grad)))
+        b.require_grad && (b.grad += reshape_grad(out.grad .* a.data, size(b.grad)))
     end
 
     return out
@@ -123,7 +123,7 @@ function Base.:^(a::Tensor, b::Real)
     require_grad = a.require_grad
     out = Tensor(a.data .^ b; parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad .* b .* (a.data .^ (b - 1))
+        a.require_grad && (a.grad += out.grad .* b .* (a.data .^ (b - 1)))
     end
 
     return out
@@ -134,19 +134,7 @@ function Base.inv(a::Tensor)
     require_grad = a.require_grad
     out = Tensor(inv.(a.data); parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad .* (-1) .* (a.data .^ (-2))
-    end
-
-    return out
-end
-
-function matmul(a::Tensor, b::Tensor)
-    parents = Set{Tensor}([a, b])
-    require_grad = a.require_grad || b.require_grad
-    out = Tensor(a.data * b.data; parents, require_grad)
-    out.update! = () -> begin
-        a.grad += out.grad * transpose(b.data)
-        b.grad += transpose(a.data) * out.grad
+        a.require_grad && (a.grad += out.grad .* (-1) .* (a.data .^ (-2)))
     end
 
     return out
@@ -157,7 +145,7 @@ function Base.sin(a::Tensor)
     require_grad = a.require_grad
     out = Tensor(sin.(a.data); parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad .* cos.(a.data)
+        a.require_grad && (a.grad += out.grad .* cos.(a.data))
     end
 
     return out
@@ -168,7 +156,7 @@ function Base.cos(a::Tensor)
     require_grad = a.require_grad
     out = Tensor(cos.(a.data); parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad .* (-1) .* sin.(a.data)
+        a.require_grad && (a.grad += out.grad .* (-1) .* sin.(a.data))
     end
 
     return out
@@ -179,7 +167,7 @@ function Base.exp(a::Tensor)
     require_grad = a.require_grad
     out = Tensor(exp.(a.data); parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad .* out.data
+        a.require_grad && (a.grad += out.grad .* out.data)
     end
 
     return out
@@ -190,7 +178,30 @@ function Base.log(a::Tensor)
     require_grad = a.require_grad
     out = Tensor(log.(a.data); parents, require_grad)
     out.update! = () -> begin
-        a.grad += out.grad ./ a.data
+        a.require_grad && (a.grad += out.grad ./ a.data)
+    end
+
+    return out
+end
+
+function Base.transpose(a::Tensor)
+    parents = Set{Tensor}([a])
+    require_grad = a.require_grad
+    out = Tensor(transpose(a.data); parents, require_grad)
+    out.update! = () -> begin
+        a.require_grad && (a.grad += transpose(out.grad))
+    end
+
+    return out
+end
+
+function matmul(a::Tensor, b::Tensor)
+    parents = Set{Tensor}([a, b])
+    require_grad = a.require_grad || b.require_grad
+    out = Tensor(a.data * b.data; parents, require_grad)
+    out.update! = () -> begin
+        a.require_grad && (a.grad += out.grad * transpose(b.data))
+        b.require_grad && (b.grad += transpose(a.data) * out.grad)
     end
 
     return out
@@ -297,7 +308,7 @@ function backward(a::Tensor)
     nodes = topological_sort(a)
     a.grad = ones(Float32, size(a.grad))
     for node in reverse(nodes)
-        node.require_grad && node.update!()
+        node.update!()
     end
 end
 
