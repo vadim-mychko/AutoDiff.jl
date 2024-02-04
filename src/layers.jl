@@ -51,7 +51,7 @@ end
 
 function Base.show(io::IO, layer::Linear)
     out, in = size(layer.parameters.data)
-    print(io, "Linear $out x $in")
+    print(io, "Linear $in => $out")
 end
 
 function (layer::Linear)(x::Tensor)
