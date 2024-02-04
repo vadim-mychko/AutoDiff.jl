@@ -23,7 +23,11 @@ mutable struct Sequential <: Layer
 end
 
 function Sequential(layers::Layer...)
-    return Sequential(layers)
+    return Sequential(collect(layers))
+end
+
+function Base.show(io::IO, seq::Sequential)
+    print(io, "Sequential($(seq.layers))")
 end
 
 function (seq::Sequential)(x::Tensor)
@@ -39,7 +43,7 @@ mutable struct Linear <: Layer
     parameters::Tensor
 end
 
-function Linear(in::Integer, out::Integer; bias=true)
+function Linear(in::Integer, out::Integer; bias=false)
     bias && (in += 1)
     params = Tensor(rand(Float32, (out, in)); require_grad=true)
     return Linear(params)
