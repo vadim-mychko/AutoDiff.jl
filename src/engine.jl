@@ -32,7 +32,7 @@ mutable struct Tensor
     operation::AbstractString
     parents::AbstractSet{Tensor}
     require_grad::Bool
-    grad::AbstractArray{Float32}
+    grad::AbstractArray{<:AbstractFloat}
     update!::Function
 end
 
@@ -44,7 +44,7 @@ function Tensor(
     require_grad::Bool=false,
 )
     return Tensor(data, label, operation, parents, require_grad,
-        zeros(Float32, size(data)), () -> return)
+        zeros(Float64, size(data)), () -> return)
 end
 
 function Tensor(data::Real; kwargs...)
@@ -298,7 +298,7 @@ after each update step.
 - `a::Tensor`: The tensor for which to reset the gradient.
 """
 function zero_grad!(a::Tensor)
-    a.grad = zeros(Float32, size(a.grad))
+    a.grad = zeros(Float64, size(a.grad))
 end
 
 """
