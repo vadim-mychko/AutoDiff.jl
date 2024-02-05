@@ -48,3 +48,7 @@ show_graph(e)
 ```
 
 ![Computational Graph Example](assets/computational_graph.svg)
+
+## Examples
+Example on how to train Multilayer Perceptron using the AutoDiff engine can be found [here](examples/mlp_classifier.ipynb)
+![MLP Classifier Example](assets/mlp_classifier.jpg)
